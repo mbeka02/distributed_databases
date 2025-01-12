@@ -40,8 +40,10 @@ services:
     working_dir: /data
     entrypoint: /bin/bash
     command: >
-      -c "wget https://sqlite.org/2024/sqlite-tools-linux-x86-3430200.zip &&
-          unzip sqlite-tools-linux-x86-3430200.zip -d /usr/local/bin &&
+      -c "apt-get update &&
+          apt-get install -y unzip &&
+          wget https://sqlite.org/2024/sqlite-tools-linux-x64-3470200.zip &&
+          unzip sqlite-tools-linux-x64-3470200.zip -d /usr/local/bin &&
           /usr/local/bin/sqlite3 /data/distributed_db.sqlite"
 
 volumes:
