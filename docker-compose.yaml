@@ -1,5 +1,5 @@
 services:
-  #Postgres service running on Ubuntu.
+  # Postgres service running on Ubuntu
   postgres_ubuntu:
     image: postgres:latest
     container_name: postgres_site
@@ -8,43 +8,47 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - "5432:5432"
+      - "7000:5432" # Exposing container's port 5432 to host's port 7000
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - distributed_network
-  #MariaDB  service running on Ubuntu.
+
+  # MariaDB service running on Ubuntu
   mariadb_ubuntu:
     image: mariadb:latest
     container_name: mariadb_site
     environment:
       - MARIADB_DATABASE=distributed_db
       - MARIADB_USER=root
-      - MARIADB_ROOT_PASSWORD=
+      - MARIADB_ROOT_PASSWORD=password
     ports:
-      - "3306:3306"
+      - "7001:3306" # Exposing container's port 3306 to host's port 7001
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
       - distributed_network
-  #SQLite service on Windows
-  SQLite_windows:
-    #Using windows server core as the base image
-    image: mcr.microsoft.com/windows/servercore:ltsc2019
-    # Install SQLite and create database
-    command:
-      - powershell
-      - |
-        Invoke-WebRequest -Uri 'https://sqlite.org/2024/sqlite-tools-win32-x86-3430200.zip' -OutFile 'C:\sqlite.zip'
-        Expand-Archive C:\sqlite.zip -DestinationPath C:\sqlite
-        Set-Location C:\sqlite
-        .\sqlite3.exe C:\sqlite_data\distributed_db.sqlite
+
+  # SQLite service on OSX(macOS) (using dockurr/macos)
+  SQLite_OSX:
+    image: dockurr/macos
+    container_name: sqlite_site
+    volumes:
+      - sqlite_data:/data
     networks:
       - distributed_network
+    working_dir: /data
+    entrypoint: /bin/bash
+    command: >
+      -c "wget https://sqlite.org/2024/sqlite-tools-linux-x86-3430200.zip &&
+          unzip sqlite-tools-linux-x86-3430200.zip -d /usr/local/bin &&
+          /usr/local/bin/sqlite3 /data/distributed_db.sqlite"
+
 volumes:
   postgres_data:
   mariadb_data:
   sqlite_data:
+
 networks:
   distributed_network:
     driver: bridge
