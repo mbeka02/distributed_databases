@@ -1,4 +1,18 @@
 services:
+  # Postgres for middleware
+  postgres_middleware:
+    image: postgres:latest
+    container_name: postgres_middleware
+    environment:
+      - POSTGRES_DB=middleware_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      "7002:5432"
+    volumes:
+      - middleware_data:/var/lib/postgresql/data
+    networks:
+      - distributed_network
   # Postgres service running on linux
   # To use psql in the container run : docker exec -it postgres_site psql -U postgres
   postgres_ubuntu:
