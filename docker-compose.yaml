@@ -8,7 +8,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      "7002:5432"
+      - "7002:5432"
     volumes:
       - middleware_data:/var/lib/postgresql/data
     networks:
@@ -43,23 +43,22 @@ services:
       - "7001:3306" # Exposing container's port 3306 to host's port 7001
     volumes:
       - mariadb_data:/var/lib/mysql
-      - mariadb_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mariadb_init:/docker-entrypoint-initdb.d
     networks:
       - distributed_network
 
-  # SQLite service on Alpine
-  #docker exec -it sqlite_site sh
-  mysql_apline:
-    image: alpine/mysql
+  # MYSQL service on CentOS
+  mysql_centos:
+    image: centos/mysql-80-centos7:8.0
     container_name: mysql_site
     volumes:
     - mysql_data:/var/lib/mysql
-    - mysql_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    - mysql_init:/docker-entrypoint-initdb.d
     environment:
-     MYSQL_ROOT_PASSWORD: password
-     MYSQL_DATABASE: distributed_db
-     MYSQL_USER: root
      MYSQL_PASSWORD: password
+     MYSQL_DATABASE: distributed_db
+     MYSQL_USER: admin
+     MYSQL_ROOT_PASSWORD: password
     ports:
      - 7003:3306
     networks:
@@ -71,8 +70,8 @@ volumes:
   middleware_data:
   postgres_data_init:
   mariadb_init:
-  mysql_data:
   mysql_init:
+  mysql_data:
 
 
 networks:
