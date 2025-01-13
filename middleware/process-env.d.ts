@@ -4,6 +4,7 @@ declare global {
             DATABASE_URL: string,
             NAIROBI_URL: string,
             MARIADB_HOST: string,
+            MARIADB_PORT: number,
             MARIADB_USER: string,
             MARIADB_PASSWORD: string,
             MARIADB_CONNECTION_LIMIT: number,

@@ -10,3 +10,14 @@ const pool = mysql.createPool({
   });
 
 export default pool;
+
+async function test() {
+  try {
+    const results = await pool.query("SELECT 1 as val");
+    console.log(results);
+  } catch(err) {
+    console.log("MySQL sucks =>", err);
+  }
+}
+
+test();
