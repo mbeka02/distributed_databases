@@ -1,7 +1,7 @@
 import Express from "express";
-import { myDB } from "../lmdb";
-import { SETUP_KEY } from "../constants";
-import { relationSetupConfig } from "../global_directory";
+import { myDB } from "./lmdb";
+import { SETUP_KEY } from "./constants";
+import { relationSetupConfig } from "./global_directory";
 const app = Express();
 
 app.get("/test", (req, res) => {
