@@ -1,5 +1,6 @@
 services:
-  # Postgres service running on Ubuntu
+  # Postgres service running on linux
+  # To use psql in the container run : docker exec -it postgres_site psql -U postgres
   postgres_ubuntu:
     image: postgres:latest
     container_name: postgres_site
@@ -14,7 +15,8 @@ services:
     networks:
       - distributed_network
 
-  # MariaDB service running on Ubuntu
+  # MariaDB service running on linux
+  # To use MariaDB monitor in the container run: docker exec -it mariadb_site mariadb -u root -ppassword
   mariadb_ubuntu:
     image: mariadb:latest
     container_name: mariadb_site
@@ -43,7 +45,7 @@ services:
       -c "apt-get update &&
           apt-get install -y unzip &&
           wget https://sqlite.org/2024/sqlite-tools-linux-x64-3470200.zip &&
-          unzip sqlite-tools-linux-x64-3470200.zip -d /usr/local/bin &&
+          unzip -u sqlite-tools-linux-x64-3470200.zip -d /usr/local/bin &&
           /usr/local/bin/sqlite3 /data/distributed_db.sqlite"
 
 volumes:
