@@ -26,6 +26,7 @@ services:
       - "7000:5432" # Exposing container's port 5432 to host's port 7000
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./resources/postgres_data_init:/docker-entrypoint-initdb.d
     networks:
       - distributed_network
 
@@ -42,6 +43,7 @@ services:
       - "7001:3306" # Exposing container's port 3306 to host's port 7001
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./resources/mariadb/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - distributed_network
 
