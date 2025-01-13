@@ -1,10 +1,10 @@
 import { setupEmployees, setupInventory, setupProducts, setupSales, setupStores } from "./fragments/setup";
 
-const SALES = "Sales";
-const PRODUCTS = "Products";
-const INVENTORY = "Inventory";
-const EMPLOYEES = "Employees";
-const STORES = "Stores";
+export const SALES = "Sales";
+export const PRODUCTS = "Products";
+export const INVENTORY = "Inventory";
+export const EMPLOYEES = "Employees";
+export const STORES = "Stores";
 
 const relations = [SALES, PRODUCTS, INVENTORY, EMPLOYEES, STORES];
 
