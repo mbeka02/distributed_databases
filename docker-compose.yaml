@@ -26,7 +26,7 @@ services:
       - "7000:5432" # Exposing container's port 5432 to host's port 7000
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./resources/postgres_data_init:/docker-entrypoint-initdb.d
+      - postgres_data_init:/docker-entrypoint-initdb.d
     networks:
       - distributed_network
 
@@ -43,26 +43,37 @@ services:
       - "7001:3306" # Exposing container's port 3306 to host's port 7001
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ./resources/mariadb/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mariadb_init/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - distributed_network
 
   # SQLite service on Alpine
   #docker exec -it sqlite_site sh
-  SQLite_Alpine:
-    image: alpine:latest
-    container_name: sqlite_site
+  mysql_apline:
+    image: alpine/mysql
+    container_name: mysql_site
     volumes:
-      - sqlite_data:/data
+    - mysql_data:/var/lib/mysql
+    - mysql_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+     MYSQL_ROOT_PASSWORD: password
+     MYSQL_DATABASE: distributed_db
+     MYSQL_USER: root
+     MYSQL_PASSWORD: password
+    ports:
+     - 7003:3306
     networks:
       - distributed_network
-    command: >
-      sh -c "apk update && apk upgrade && apk add sqlite && mkdir -p /data && sqlite3 /data/distributed_db.sqlite && tail -f /dev/null"
 
 volumes:
   postgres_data:
   mariadb_data:
-  sqlite_data:
+  middleware_data:
+  postgres_data_init:
+  mariadb_init:
+  mysql_data:
+  mysql_init:
+
 
 networks:
   distributed_network:
