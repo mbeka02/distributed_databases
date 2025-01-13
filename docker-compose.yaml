@@ -31,22 +31,17 @@ services:
     networks:
       - distributed_network
 
-  # SQLite service on OSX(macOS) (using dockurr/macos)
-  SQLite_OSX:
-    image: dockurr/macos
+  # SQLite service on Alpine
+  #docker exec -it sqlite_site sh
+  SQLite_Alpine:
+    image: alpine:latest
     container_name: sqlite_site
     volumes:
       - sqlite_data:/data
     networks:
       - distributed_network
-    working_dir: /data
-    entrypoint: /bin/bash
     command: >
-      -c "apt-get update &&
-          apt-get install -y unzip &&
-          wget https://sqlite.org/2024/sqlite-tools-linux-x64-3470200.zip &&
-          unzip -u sqlite-tools-linux-x64-3470200.zip -d /usr/local/bin &&
-          /usr/local/bin/sqlite3 /data/distributed_db.sqlite"
+      sh -c "apk update && apk upgrade && apk add sqlite && mkdir -p /data && sqlite3 /data/distributed_db.sqlite && tail -f /dev/null"
 
 volumes:
   postgres_data:
