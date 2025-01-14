@@ -5,8 +5,9 @@ import { relationSetupConfig } from "./global_directory";
 import db from "./db";
 import { employees, inventory, products, sales, stores } from "./db/schema";
 import { and, between, count, eq } from "drizzle-orm";
-import { updateInventorySchema } from "./schema";
+import { createDiscountSchema, updateInventorySchema } from "./schema";
 import client from "./db/nairobi/db";
+import { warn } from "console";
 
 const app = Express();
 const PORT = 10000;
@@ -20,7 +21,7 @@ app.get("/checkStock/:storeId", async (req, res) => {
   try {
     const storeId = parseInt(req.params.storeId, 10);
     if (isNaN(storeId)) {
-      return res.status(400).json({ error: "Invalid storeId parameter" });
+      res.status(400).json({ error: "Invalid storeId parameter" });
     }
     const stock = await db
       .select({
@@ -31,10 +32,10 @@ app.get("/checkStock/:storeId", async (req, res) => {
       .from(inventory)
       .innerJoin(products, eq(products.id, inventory.product_id))
       .where(eq(inventory.store_id, storeId));
-    return res.status(200).json({ stock: stock || [] });
+    res.status(200).json({ stock: stock || [] });
   } catch (error) {
     console.error("Error fetching stock data:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 //Store managers will be restocking when inventory is low daily
@@ -42,41 +43,45 @@ app.patch("/updateInventory/:storeId", async (req, res) => {
   try {
     const storeId = parseInt(req.params.storeId, 10);
     if (isNaN(storeId)) {
-      return res.status(400).json({ error: "Invalid storeId parameter" });
+      res.status(400).json({ error: "Invalid storeId parameter" });
     }
     const body = req.body;
     const parsed = updateInventorySchema.safeParse(body);
 
     if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ error: `validation error: ${parsed.error}` });
-    }
-    const { data } = parsed;
-    // update the middleware db first
-    await db
-      .update(inventory)
-      .set({
-        item_count: data.item_count,
-      })
-      .where(
-        and(
-          eq(inventory.product_id, data.product_id),
-          eq(inventory.store_id, storeId),
-        ),
-      );
-    // update the fragment
-    switch (storeId) {
-      case 1:
-        await client.connect();
-        const text = `UPDATE Inventory1 SET  item_count =$1 WHERE store_id =$2 AND product_id =$3`;
+      res.status(400).json({ error: `validation error: ${parsed.error}` });
+    } else {
+      const { data } = parsed;
+      // update the middleware db first
+      await db
+        .update(inventory)
+        .set({
+          item_count: data.item_count,
+        })
+        .where(
+          and(
+            eq(inventory.product_id, data.product_id),
+            eq(inventory.store_id, storeId),
+          ),
+        );
+      await client.connect();
+      // Define the table name based on the storeId
+      const tableName = `Inventory${storeId}`;
+
+      // Ensure the storeId is valid
+      if ([1, 2, 3].includes(storeId)) {
+        const query = `UPDATE ${tableName} SET item_count = $1 WHERE store_id = $2 AND product_id = $3`;
         const values = [data.item_count, storeId, data.product_id];
-        client.query(text, values);
-        break;
+        await client.query(query, values);
+      } else {
+        res.status(400).json({ error: "Invalid storeId provided" });
+      }
+      res.status(200).json({ message: "successfully restocked" });
+      await client.end();
     }
   } catch (error) {
     console.error("Error upadting the inventory:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 //Store managers will be adding employee records monthly
@@ -88,7 +93,7 @@ app.get("/totalSales/:storeId", async (req, res) => {
   try {
     const storeId = parseInt(req.params.storeId, 10);
     if (isNaN(storeId)) {
-      return res.status(400).json({ error: "Invalid storeId parameter" });
+      res.status(400).json({ error: "Invalid storeId parameter" });
     }
 
     const now = new Date();
@@ -120,10 +125,10 @@ app.get("/totalSales/:storeId", async (req, res) => {
         ),
       );
 
-    return res.status(200).json({ totalSales: totalSales || [] });
+    res.status(200).json({ totalSales: totalSales || [] });
   } catch (error) {
     console.error(`error checking the total sales: ${error}`);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 //Warehouse staff will be incharge of performing physical inventory counts at the end of day at their store
@@ -144,21 +149,52 @@ app.get("/trackInventory", async (req, res) => {
       .innerJoin(stores, eq(stores.id, inventory.id))
       .groupBy(inventory.product_id);
 
-    return res.status(200).json({ currentInvetory: currentInvetory || [] });
+    res.status(200).json({ currentInvetory: currentInvetory || [] });
   } catch (error) {
     console.error(`error checking the inventory levels: ${error}`);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 //The marketing team will create item discounts weekly
+app.patch("/createDiscount", async (req, res) => {
+  try {
+    const body = req.body;
+    const parsed = createDiscountSchema.safeParse(body);
+
+    if (!parsed.success) {
+      res.status(400).json({ error: `validation error: ${parsed.error}` });
+    } else {
+      const { data } = parsed;
+      // update the middleware db first
+      await db
+        .update(products)
+        .set({
+          discount: data.discount,
+        })
+        .where(eq(products.id, data.product_id));
+      await client.connect();
+
+      const query = `UPDATE Products SET discount=$1 WHERE product_id=$2`;
+      const values = [data.discount, data.product_id];
+      await client.query(query, values);
+      res
+        .status(400)
+        .json({ message: "the discount has been applied to teh product" });
+      await client.end();
+    }
+  } catch (error) {
+    console.error("Error upadting the inventory:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 //The accounts team will get employee salaries monthly
 app.get("/getSalaries", async (req, res) => {
   try {
     const salaries = await db.select().from(employees);
-    return res.status(200).json({ employees: employees || [] });
+    res.status(200).json({ employees: employees || [] });
   } catch (error) {
     console.error(`error fetching employee salaries: ${error}`);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -170,10 +206,10 @@ app.get("/generateReport", async (req, res) => {
       .from(sales)
       .innerJoin(products, eq(products.id, sales.id))
       .groupBy(sales.store_id, products.id);
-    return res.status(200).json({ reportsData: reportsData || [] });
+    res.status(200).json({ reportsData: reportsData || [] });
   } catch (error) {
     console.error(`error getting the reports data: ${error}`);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
