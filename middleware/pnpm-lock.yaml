@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@types/express':
-        specifier: ^5.0.0
-        version: 5.0.0
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
@@ -32,7 +29,13 @@ importers:
       pg:
         specifier: ^8.13.1
         version: 8.13.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
     devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.0
       '@types/node':
         specifier: ^22.10.6
         version: 22.10.6
@@ -1122,6 +1125,9 @@ packages:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
 
+  zod@3.24.1:
+    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+
 snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
@@ -2032,3 +2038,5 @@ snapshots:
   weak-lru-cache@1.2.2: {}
 
   xtend@4.0.2: {}
+
+  zod@3.24.1: {}
