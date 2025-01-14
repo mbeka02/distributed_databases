@@ -1,4 +1,4 @@
-# Stores Data
+-- Stores Data
 CREATE TABLE IF NOT EXISTS Stores1 (
   id INT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -21,7 +21,7 @@ insert into Stores1 (id, name, address) values (1, 'Nairobi', '87651 Merry Circl
 insert into Stores2 (id, name, address) values (2, 'Kisumu', '68 Oak Valley Pass');
 insert into Stores3 (id, name, address) values (3, 'Mombasa', '2042 Iowa Circle');
 
-# Products
+-- Products
 CREATE TABLE IF NOT EXISTS Products (
   id INT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -1031,7 +1031,7 @@ insert into Products (id, name, price, barcode, discount) values (998, 'GigaGadg
 insert into Products (id, name, price, barcode, discount) values (999, 'Golden Globe Onions', 840749, 'd7mIh14Ng8dA9Yc9VhBf7oPa8wm6gREvYqy0BxL6zZu4lv1sG4yILh5lseRwQWzBw7n5', 64);
 insert into Products (id, name, price, barcode, discount) values (1000, 'MegaGizmo', 601487, 'l4zIo0RSo2ifLQi76sEsDu7rufg3lSqmPnGZKpWFo0qCyo6xJ369We5gaqPsCTb1zDe1', 5);
 
-# Employees
+-- Employees
 CREATE TABLE IF NOT EXISTS Employees (
   id INT PRIMARY KEY,
   full_name TEXT NOT NULL, 
@@ -2044,8 +2044,7 @@ insert into Employees (id, full_name, dob, work_email, phone_number, salary, job
 insert into Employees (id, full_name, dob, work_email, phone_number, salary, jobTitle, store_id) values (999, 'Budd Goward', '1983/06/01', 'bgowardrq@github.io', '7547349361', 37503, 'Cashier', 1);
 insert into Employees (id, full_name, dob, work_email, phone_number, salary, jobTitle, store_id) values (1000, 'Constantine Storcke', '1980/04/22', 'cstorckerr@ucoz.ru', '5807225932', 24027, 'Cashier', 1);
 
-
-# Inventory3 3 
+-- Inventory3  
 CREATE TABLE IF NOT EXISTS Inventory3 (
   id INT PRIMARY KEY,
   product_id INT NOT NULL,

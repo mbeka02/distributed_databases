@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS Inventory2 (
   id INT PRIMARY KEY,
   product_id INT NOT NULL,
   store_id INT NOT NULL,
-  item_count INT NOT NULL,
+  item_count INT NOT NULL
 );
 
 insert into Inventory2 (id, product_id, store_id, item_count) values (7, 7, 2, 4100);

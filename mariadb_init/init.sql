@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS Inventory1 (
   id INT PRIMARY KEY,
   product_id INT NOT NULL,
   store_id INT NOT NULL,
-  item_count INT NOT NULL,
+  item_count INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Sales1 (
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS Sales1 (
   employee_id INT NOT NULL, 
   store_id INT NOT NULL, 
   price REAL NOT NULL, 
-  timestamp TIMESTAMP NOT NULL,
+  timestamp TIMESTAMP NOT NULL
 );
 
 insert into Inventory1 (id, product_id, store_id, item_count) values (1, 1, 1, 3720);
