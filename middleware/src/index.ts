@@ -5,6 +5,8 @@ import { relationSetupConfig } from "./global_directory";
 import db from "./db";
 import { employees, inventory, products, sales, stores } from "./db/schema";
 import { and, between, count, eq } from "drizzle-orm";
+import { updateInventorySchema } from "./schema";
+import client from "./db/nairobi/db";
 
 const app = Express();
 const PORT = 10000;
@@ -36,6 +38,47 @@ app.get("/checkStock/:storeId", async (req, res) => {
   }
 });
 //Store managers will be restocking when inventory is low daily
+app.patch("/updateInventory/:storeId", async (req, res) => {
+  try {
+    const storeId = parseInt(req.params.storeId, 10);
+    if (isNaN(storeId)) {
+      return res.status(400).json({ error: "Invalid storeId parameter" });
+    }
+    const body = req.body;
+    const parsed = updateInventorySchema.safeParse(body);
+
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: `validation error: ${parsed.error}` });
+    }
+    const { data } = parsed;
+    // update the middleware db first
+    await db
+      .update(inventory)
+      .set({
+        item_count: data.item_count,
+      })
+      .where(
+        and(
+          eq(inventory.product_id, data.product_id),
+          eq(inventory.store_id, storeId),
+        ),
+      );
+    // update the fragment
+    switch (storeId) {
+      case 1:
+        await client.connect();
+        const text = `UPDATE Inventory1 SET  item_count =$1 WHERE store_id =$2 AND product_id =$3`;
+        const values = [data.item_count, storeId, data.product_id];
+        client.query(text, values);
+        break;
+    }
+  } catch (error) {
+    console.error("Error upadting the inventory:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 //Store managers will be adding employee records monthly
 //Store managers will be updating employee records monthly
 //Store managers will be removing employee records monthly
