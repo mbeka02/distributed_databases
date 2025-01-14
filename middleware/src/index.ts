@@ -3,20 +3,20 @@ import { myDB } from "./lmdb";
 import { SETUP_KEY } from "./constants";
 import { relationSetupConfig } from "./global_directory";
 const app = Express();
-
+const PORT = 10000;
 app.get("/test", (req, res) => {
-    res.send("Test");
-})
+  res.send("Test");
+});
 
-app.listen(10_000, async() => {
-    let hasSetup = myDB.get(SETUP_KEY);
-    if (hasSetup !== "true") {
-        // Setup global relations
-        for (const [key, value] of Object.entries(relationSetupConfig)) {
-            value();
-        }
-
-        await myDB.put(SETUP_KEY, "true");
+app.listen(PORT, async () => {
+  let hasSetup = myDB.get(SETUP_KEY);
+  if (hasSetup !== "true") {
+    // Setup global relations
+    for (const [key, value] of Object.entries(relationSetupConfig)) {
+      value();
     }
-    console.log("Server listening on port 10000 ....");
-})
+
+    await myDB.put(SETUP_KEY, "true");
+  }
+  console.log(`Server listening on port ${PORT} ....`);
+});
