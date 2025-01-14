@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@types/express':
-        specifier: ^5.0.0
-        version: 5.0.0
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
@@ -33,6 +30,9 @@ importers:
         specifier: ^8.13.1
         version: 8.13.1
     devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.0
       '@types/node':
         specifier: ^22.10.6
         version: 22.10.6
