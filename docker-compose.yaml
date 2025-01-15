@@ -9,8 +9,8 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "7002:5432"
-    volumes:
-      - ./middleware_data:/var/lib/postgresql/data
+    # volumes:
+      # - ./middleware_data:/var/lib/postgresql/data
     networks:
       - distributed_network
   # Postgres service running on linux
