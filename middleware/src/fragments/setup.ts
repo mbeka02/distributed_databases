@@ -1,7 +1,8 @@
 import db from "../db";
 import pool from "../db/kisumu/db";
+import mysqlPool from "../db/mombasa/db";
 import client from "../db/nairobi/db";
-import { sales } from "../db/schema";
+import { employees, products, sales, stores } from "../db/schema";
 
 interface sales {
     id: number,
@@ -10,6 +11,38 @@ interface sales {
     store_id: number,
     price: number,
     timestamp: Date
+}
+
+interface Product {
+    id: number,
+    name: string,
+    barcode: string,
+    price: number,
+    discount: number
+}
+
+interface Store {
+    id: number,
+    name: string,
+    address: string
+}
+
+interface Inventory {
+    id: number,
+    product_id: number,
+    store_id: number,
+    item_count: number,
+}
+
+interface Employee {
+    id: number,
+    full_name: string,
+    dob: Date,
+    work_email: string,
+    phone_number: string,
+    salary: number,
+    jobtitle: string,
+    store_id: number
 }
 
 export async function setupSales() {
@@ -30,23 +63,77 @@ export async function setupSales() {
 
     // Update global relation
     await db.insert(sales).values(Sales);
+    await client.end();
 }
-
-setupSales()
-
 
 export async function setupProducts() {
     console.log("Setting up products global relation");
+
+    // Get products from Nairobi
+    await client.connect();
+    const productRows = await client.query<Product>("SELECT * FROM Products");
+
+    // Insert into global relation
+    await db.insert(products).values(productRows.rows);
+    await client.end();
 }
 
 export async function setupStores() { 
     console.log("Setting up stores");
+
+    // Get stores from nairobi
+    await client.connect();
+    const stores1rows = await client.query<Store>("SELECT * FROM Stores1");
+    const stores2rows = await client.query<Store>("SELECT * FROM Stores2");
+    const stores3rows = await client.query<Store>("SELECT * FROM Stores3");
+
+    const storeRows: Store[] = [...stores1rows.rows, ...stores2rows.rows, ...stores3rows.rows]
+    // Insert in global relation
+    await db.insert(stores).values(storeRows);
+    await client.end();
 }
 
 export async function setupInventory() {
     console.log("Setting up inventory");
+
+    await client.connect();
+
+    // Fetch from nairobi
+    const inventory3 = await client.query<Inventory>("SELECT * FROM Inventory3");
+
+    // Fetch from kisumu
+    await pool.query("USE distributed_db");
+    const inventory1 = await pool.query<Inventory[]>("SELECT * FROM Inventory1");
+    console.log("Done 2");
+
+    // Fetch from mombasa
+    await mysqlPool.query("USE distributed_db")
+    const inventory2 = await mysqlPool.query("SELECT * FROM Inventory2");
+    console.log(inventory2);
+    await client.end();
 }
 
 export async function setupEmployees() {
     console.log("Setting up employees");
+
+    // Fetch from nairobi
+    await client.connect();
+    const employeeRows = await client.query<Employee>("SELECT * FROM Employees");
+    
+    const employeeR = employeeRows.rows.map((r) => {
+        return {
+            id: r.id,
+            dob: r.dob,
+            name: r.full_name,
+            work_email: r.work_email,
+            phone_number: r.phone_number,
+            sex: "M",
+            salary: r.salary,
+            jobTitle: r.jobtitle,
+            store_id: r.store_id
+        }
+    });
+
+    // Insert in global relation
+    await db.insert(employees).values(employeeR);
 }
