@@ -1,12 +1,12 @@
 import pg from "pg";
-const { Client } = pg;
+const { Pool } = pg;
 import path from "path";
 import { config } from "dotenv";
 
 import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, "../../../.env") });
-const client = new Client({
+const client = new Pool({
   connectionString: process.env.NAIROBI_URL,
 });
 
