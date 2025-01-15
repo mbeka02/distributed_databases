@@ -7,14 +7,6 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, "../../../.env") });
 
-console.log(
-  process.env.MARIADB_HOST,
-  process.env.MARIADB_USER,
-  process.env.MARIADB_PASSWORD,
-  process.env.MARIADB_CONNECTION_LIMIT,
-  process.env.MARIADB_PORT,
-);
-
 const pool = mariadb.createPool({
   host: process.env.MARIADB_HOST,
   user: process.env.MARIADB_USER,

@@ -76,7 +76,7 @@ app.patch("/updateInventory/:storeId", async (req, res) => {
 
       // Ensure the storeId is valid
       if ([1, 2, 3].includes(storeId)) {
-        const query = `UPDATE ${tableName} SET item_count = $1 WHERE store_id = $2 AND product_id = $3`;
+        const query = `UPDATE ${tableName} SET item_count = ? WHERE store_id = ? AND product_id = ?`;
         const values = [data.item_count, storeId, data.product_id];
 
         switch (storeId) {
