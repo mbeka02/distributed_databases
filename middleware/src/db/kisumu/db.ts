@@ -25,14 +25,14 @@ const pool = mariadb.createPool({
 
 export default pool;
 
-async function test() {
-  try {
-    const connection = await pool.getConnection();
-    const result = await connection.query("SELECT 1 as val");
-    console.log(result);
-  } catch (err) {
-    console.log("Dumb fucking error =>", err);
-  }
-}
+// async function test() {
+//   try {
+//     const connection = await pool.getConnection();
+//     const result = await connection.query("SELECT 1 as val");
+//     console.log(result);
+//   } catch (err) {
+//     console.log("Dumb fucking error =>", err);
+//   }
+// }
 
-test();
+// test();
