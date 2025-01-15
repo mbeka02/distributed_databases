@@ -5,9 +5,15 @@ import { relationSetupConfig } from "./global_directory";
 import db from "./db";
 import { employees, inventory, products, sales, stores } from "./db/schema";
 import { and, between, count, eq } from "drizzle-orm";
-import { addEmployeeSchema, customerPurchase, createDiscountSchema, updateInventorySchema } from "./schema";
+import {
+  addEmployeeSchema,
+  customerPurchase,
+  createDiscountSchema,
+  updateInventorySchema,
+} from "./schema";
 import client from "./db/nairobi/db";
 import pool from "./db/kisumu/db";
+import mombasaPool from "./db/mombasa/db";
 
 const app = Express();
 const PORT = 10000;
@@ -64,7 +70,6 @@ app.patch("/updateInventory/:storeId", async (req, res) => {
             eq(inventory.store_id, storeId),
           ),
         );
-      await client.connect();
       // Define the table name based on the storeId
       const tableName = `Inventory${storeId}`;
 
@@ -72,12 +77,25 @@ app.patch("/updateInventory/:storeId", async (req, res) => {
       if ([1, 2, 3].includes(storeId)) {
         const query = `UPDATE ${tableName} SET item_count = $1 WHERE store_id = $2 AND product_id = $3`;
         const values = [data.item_count, storeId, data.product_id];
-        await client.query(query, values);
+
+        switch (storeId) {
+          case 1:
+            const connection = await pool.getConnection();
+            await connection.query(query, values);
+            break;
+          case 2:
+            await mombasaPool.query(query, values);
+            break;
+          case 3:
+            await client.connect();
+            await client.query(query, values);
+            await client.end();
+            break;
+        }
       } else {
         res.status(400).json({ error: "Invalid storeId provided" });
       }
       res.status(200).json({ message: "successfully restocked" });
-      await client.end();
     }
   } catch (error) {
     console.error("Error upadting the inventory:", error);
@@ -219,31 +237,44 @@ app.post("/addEmployee", async (req, res) => {
     if (parsed.success) {
       const data = parsed.data;
       // Update materialized view
-      const employeeID = await db.insert(employees).values({
-        name: data.name,
-        dob: new Date(data.dob),
-        work_email: data.work_email,
-        phone_number: data.phone_number,
-        sex: "M",
-        salary: data.salary,
-        jobTitle: data.job_title,
-        store_id: data.store_id
-      }).returning({id: employees.id});
+      const employeeID = await db
+        .insert(employees)
+        .values({
+          name: data.name,
+          dob: new Date(data.dob),
+          work_email: data.work_email,
+          phone_number: data.phone_number,
+          sex: "M",
+          salary: data.salary,
+          jobTitle: data.job_title,
+          store_id: data.store_id,
+        })
+        .returning({ id: employees.id });
 
       // Update fragment
       await client.connect();
       await client.query(
-        "INSERT INTO Employees (id, full_name, dob, work_email, phone_number, salary, jobTitle, store_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
-        , [employeeID[0].id, data.name, data.dob, data.work_email, data.phone_number, data.salary, data.job_title, data.store_id]);
-      res.status(201).json({message: "Employee Added"});
-      } else {
+        "INSERT INTO Employees (id, full_name, dob, work_email, phone_number, salary, jobTitle, store_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        [
+          employeeID[0].id,
+          data.name,
+          data.dob,
+          data.work_email,
+          data.phone_number,
+          data.salary,
+          data.job_title,
+          data.store_id,
+        ],
+      );
+      res.status(201).json({ message: "Employee Added" });
+    } else {
       const messages = parsed.error.issues.map((i) => i.message);
-      res.status(400).json({errors: messages});
+      res.status(400).json({ errors: messages });
     }
-  } catch(err) {
+  } catch (err) {
     await client.end();
     console.log("Internal server error", err);
-    res.status(500).json({message: "Internal Server Error"});
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -252,18 +283,24 @@ app.patch("/updateEmployee/:id", async (req, res) => {
     const salary = Number.parseFloat(req.body.salary);
     const id = Number.parseInt(req.params.id);
     // Update materialized view
-    await db.update(employees).set({
-      salary: salary
-    }).where(eq(employees.id, id));
+    await db
+      .update(employees)
+      .set({
+        salary: salary,
+      })
+      .where(eq(employees.id, id));
 
     // Update fragment
     await client.connect();
-    await client.query("UPDATE Employees SET salary = $1 WHERE id = $2", [salary, id]);
-    res.status(201).json({message: "Updated Employee Successfully"});
-  } catch(err) {
+    await client.query("UPDATE Employees SET salary = $1 WHERE id = $2", [
+      salary,
+      id,
+    ]);
+    res.status(201).json({ message: "Updated Employee Successfully" });
+  } catch (err) {
     await client.end();
     console.log("Internal sever error", err);
-    res.status(500).json({error: "Internal Server Error"});
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -277,11 +314,11 @@ app.delete("/removeEmployee/:id", async (req, res) => {
     // Update fragment
     await client.connect();
     await client.query("DELETE FROM Employees WHERE id=$1", [id]);
-    res.status(201).json({message: "Employee Record Deleted Succesfully"});
-  } catch(err) {
+    res.status(201).json({ message: "Employee Record Deleted Succesfully" });
+  } catch (err) {
     await client.end();
     console.log("Internal server error", err);
-    res.status(500).json({error: "Internal Server Error"});
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -291,41 +328,70 @@ app.post("/customerPurchase", async (req, res) => {
     if (parsed.success) {
       const data = parsed.data;
       // Update materialized view
-      const saleID = await db.insert(sales).values({
-        price: data.price,
-        product_id: data.product_id,
-        employee_id: data.employee_id,
-        store_id: data.store_id,
-        timestamp: new Date(data.timestamp)
-      }).returning({id: sales.id});
+      const saleID = await db
+        .insert(sales)
+        .values({
+          price: data.price,
+          product_id: data.product_id,
+          employee_id: data.employee_id,
+          store_id: data.store_id,
+          timestamp: new Date(data.timestamp),
+        })
+        .returning({ id: sales.id });
 
       // Update fragment
       if (data.store_id === 2) {
         await client.connect();
-        client.query("INSERT INTO Sales2 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
-          [saleID[0].id, data.product_id, data.employee_id, data.store_id, data.price, data.timestamp]
-        )
+        client.query(
+          "INSERT INTO Sales2 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
+          [
+            saleID[0].id,
+            data.product_id,
+            data.employee_id,
+            data.store_id,
+            data.price,
+            data.timestamp,
+          ],
+        );
       } else if (data.store_id === 3) {
         await client.connect();
-        client.query("INSERT INTO Sales3 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)", 
-          [saleID[0].id, data.product_id, data.employee_id, data.store_id, data.price, data.timestamp])
+        client.query(
+          "INSERT INTO Sales3 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
+          [
+            saleID[0].id,
+            data.product_id,
+            data.employee_id,
+            data.store_id,
+            data.price,
+            data.timestamp,
+          ],
+        );
       } else if (data.store_id == 1) {
         const connection = await pool.getConnection();
-        await connection.query("INSERT INTO Sales1 (id, product_id, employee_id, store_id, price, timestamp) VALUES (?, ?, ?, ?, ?, ?)"
-          , [saleID[0].id, data.product_id, data.employee_id, data.store_id, data.price, data.timestamp]);
+        await connection.query(
+          "INSERT INTO Sales1 (id, product_id, employee_id, store_id, price, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+          [
+            saleID[0].id,
+            data.product_id,
+            data.employee_id,
+            data.store_id,
+            data.price,
+            data.timestamp,
+          ],
+        );
 
         connection.end();
       }
     } else {
       const errors = parsed.error.issues.map((i) => i.message);
-      res.status(400).json({errors});
+      res.status(400).json({ errors });
     }
-  } catch(err) {
+  } catch (err) {
     await client.end();
     console.log("Internal Server Error", err);
-    res.status(500).json({error: "Internal Server Error"});
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
 app.listen(PORT, async () => {
   let hasSetup = myDB.get(SETUP_KEY);
