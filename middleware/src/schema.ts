@@ -21,3 +21,7 @@ export const customerPurchase = z.object({
   price: z.number(),
   timestamp: z.string().date()
 })
+export const createDiscountSchema = z.object({
+  discount: z.number(),
+  product_id: z.number(),
+});
