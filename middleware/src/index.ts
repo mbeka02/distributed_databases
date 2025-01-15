@@ -14,10 +14,82 @@ import {
 import client from "./db/nairobi/db";
 import pool from "./db/kisumu/db";
 import mombasaPool from "./db/mombasa/db";
+import z from "zod";
 
 const app = Express();
 const PORT = 10000;
 app.use(json());
+async function updateFragmentInventory(
+  storeId: number,
+  data: z.infer<typeof updateInventorySchema>,
+) {
+  // Define the table name based on the storeId
+  const tableName = `Inventory${storeId}`;
+
+  // Ensure the storeId is valid
+  if (![1, 2, 3].includes(storeId)) {
+    throw new Error("Invalid storeId");
+  }
+
+  // Initialize query and values
+  let query: string = "";
+  let values: Array<number | string> = [];
+
+  // Set query and values based on the storeId
+  switch (storeId) {
+    case 1: // MySQL or MariaDB
+    case 2: // MariaDB
+      query = `UPDATE ${tableName} SET item_count = ? WHERE store_id = ? AND product_id = ?`;
+      values = [data.item_count, storeId, data.product_id];
+      break;
+    case 3: // PostgreSQL
+      query = `UPDATE ${tableName} SET item_count = $1 WHERE store_id = $2 AND product_id = $3`;
+      values = [data.item_count, storeId, data.product_id];
+      break;
+    default:
+      throw new Error("Unhandled storeId case");
+  }
+
+  // Execute the query based on the storeId
+  try {
+    switch (storeId) {
+      case 1: {
+        // MariaDB connection
+        const connection = await pool.getConnection();
+        try {
+          await connection.query(query, values);
+        } finally {
+          connection.release();
+        }
+        break;
+      }
+      case 2: {
+        // MySQL connection
+        const connection = await mombasaPool.getConnection();
+        try {
+          await connection.query(query, values);
+        } finally {
+          connection.release();
+        }
+        break;
+      }
+      case 3: {
+        // PostgreSQL connection
+        await client.connect();
+        try {
+          await client.query(query, values);
+        } finally {
+          await client.end();
+        }
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("Error executing query:", error);
+    throw error;
+  }
+}
+
 app.get("/test", (req, res) => {
   res.send("Test");
 });
@@ -71,36 +143,12 @@ app.patch("/updateInventory/:storeId", async (req, res) => {
             eq(inventory.store_id, storeId),
           ),
         );
-      // Define the table name based on the storeId
-      const tableName = `Inventory${storeId}`;
-
-      // Ensure the storeId is valid
-      if ([1, 2, 3].includes(storeId)) {
-        const query = `UPDATE ${tableName} SET item_count = ? WHERE store_id = ? AND product_id = ?`;
-        const values = [data.item_count, storeId, data.product_id];
-
-        switch (storeId) {
-          case 1:
-            const connection = await pool.getConnection();
-            await connection.query(query, values);
-            break;
-          case 2:
-            await mombasaPool.query(query, values);
-            break;
-          case 3:
-            await client.connect();
-            await client.query(query, values);
-            await client.end();
-            break;
-        }
-      } else {
-        res.status(400).json({ error: "Invalid storeId provided" });
-      }
+      await updateFragmentInventory(storeId, data);
       res.status(200).json({ message: "successfully restocked" });
     }
   } catch (error) {
     console.error("Error upadting the inventory:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: `Internal Server Error:${error}` });
   }
 });
 //Store managers will be adding employee records monthly
