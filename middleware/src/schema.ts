@@ -6,7 +6,7 @@ export const updateInventorySchema = z.object({
 
 export const addEmployeeSchema = z.object({
   name: z.string(),
-  dob: z.string().date(),
+  dob: z.string(),
   work_email: z.string().email({message: "Work email should be an email"}),
   phone_number: z.string(),
   salary: z.number(),
@@ -19,7 +19,7 @@ export const customerPurchase = z.object({
   employee_id: z.number(),
   store_id: z.number(),
   price: z.number(),
-  timestamp: z.string().date()
+  timestamp: z.string()
 })
 export const createDiscountSchema = z.object({
   discount: z.number(),

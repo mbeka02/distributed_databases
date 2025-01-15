@@ -38,6 +38,7 @@ app.get("/checkStock/:storeId", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 //Store managers will be restocking when inventory is low daily
 app.patch("/updateInventory/:storeId", async (req, res) => {
   try {
@@ -174,12 +175,12 @@ app.patch("/createDiscount", async (req, res) => {
         .where(eq(products.id, data.product_id));
       await client.connect();
 
-      const query = `UPDATE Products SET discount=$1 WHERE product_id=$2`;
+      const query = `UPDATE Products SET discount=$1 WHERE id=$2`;
       const values = [data.discount, data.product_id];
       await client.query(query, values);
       res
         .status(400)
-        .json({ message: "the discount has been applied to teh product" });
+        .json({ message: "discount has been applied to teh product" });
       await client.end();
     }
   } catch (error) {
@@ -218,6 +219,7 @@ app.post("/addEmployee", async (req, res) => {
     const parsed = addEmployeeSchema.safeParse(req.body);
     if (parsed.success) {
       const data = parsed.data;
+      console.log(data);
       // Update materialized view
       const employeeID = await db.insert(employees).values({
         name: data.name,
@@ -241,7 +243,6 @@ app.post("/addEmployee", async (req, res) => {
       res.status(400).json({errors: messages});
     }
   } catch(err) {
-    await client.end();
     console.log("Internal server error", err);
     res.status(500).json({message: "Internal Server Error"});
   }
@@ -261,7 +262,6 @@ app.patch("/updateEmployee/:id", async (req, res) => {
     await client.query("UPDATE Employees SET salary = $1 WHERE id = $2", [salary, id]);
     res.status(201).json({message: "Updated Employee Successfully"});
   } catch(err) {
-    await client.end();
     console.log("Internal sever error", err);
     res.status(500).json({error: "Internal Server Error"});
   }
@@ -279,7 +279,6 @@ app.delete("/removeEmployee/:id", async (req, res) => {
     await client.query("DELETE FROM Employees WHERE id=$1", [id]);
     res.status(201).json({message: "Employee Record Deleted Succesfully"});
   } catch(err) {
-    await client.end();
     console.log("Internal server error", err);
     res.status(500).json({error: "Internal Server Error"});
   }
@@ -321,7 +320,6 @@ app.post("/customerPurchase", async (req, res) => {
       res.status(400).json({errors});
     }
   } catch(err) {
-    await client.end();
     console.log("Internal Server Error", err);
     res.status(500).json({error: "Internal Server Error"});
   }
