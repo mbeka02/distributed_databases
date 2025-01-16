@@ -41,5 +41,5 @@ export const relationSetupConfig = {
   [STORES]: setupStores,
 };
 
-// Re-export the constants if needed
+// Re-export the constants
 export { SALES, PRODUCTS, INVENTORY, EMPLOYEES, STORES };

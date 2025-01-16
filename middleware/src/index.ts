@@ -57,6 +57,8 @@ async function updateFragmentInventory(
         // MariaDB connection
         const connection = await pool.getConnection();
         try {
+          await connection.query("USE distributed_db");
+
           await connection.query(query, values);
         } finally {
           connection.release();
@@ -79,7 +81,7 @@ async function updateFragmentInventory(
         try {
           await client.query(query, values);
         } finally {
-          await client.end();
+          // await client.end();
         }
         break;
       }
@@ -109,7 +111,8 @@ app.get("/checkStock/:storeId", async (req, res) => {
       })
       .from(inventory)
       .innerJoin(products, eq(products.id, inventory.product_id))
-      .where(eq(inventory.store_id, storeId));
+      .where(eq(inventory.store_id, storeId))
+      .groupBy(products.id);
     res.status(200).json({ stock: stock || [] });
   } catch (error) {
     console.error("Error fetching stock data:", error);
@@ -214,7 +217,7 @@ app.get("/trackInventory", async (req, res) => {
       .from(inventory)
       .innerJoin(products, eq(products.id, inventory.product_id))
       .innerJoin(stores, eq(stores.id, inventory.id))
-      .groupBy(inventory.product_id);
+      .groupBy(products.id, stores.name, stores.address);
 
     res.status(200).json({ currentInvetory: currentInvetory || [] });
   } catch (error) {
@@ -247,7 +250,6 @@ app.patch("/createDiscount", async (req, res) => {
       res
         .status(400)
         .json({ message: "discount has been applied to teh product" });
-      await client.end();
     }
   } catch (error) {
     console.error("Error upadting the inventory:", error);
@@ -258,7 +260,7 @@ app.patch("/createDiscount", async (req, res) => {
 app.get("/getSalaries", async (req, res) => {
   try {
     const salaries = await db.select().from(employees);
-    res.status(200).json({ employees: employees || [] });
+    res.status(200).json({ salaries: salaries || [] });
   } catch (error) {
     console.error(`error fetching employee salaries: ${error}`);
     res.status(500).json({ error: "Internal Server Error" });
@@ -266,13 +268,13 @@ app.get("/getSalaries", async (req, res) => {
 });
 
 //The executive will be generating reports on sales of all locations monthly
-app.get("/generateReport", async (req, res) => {
+app.get("/getReports", async (req, res) => {
   try {
     const reportsData = await db
       .select()
       .from(sales)
       .innerJoin(products, eq(products.id, sales.id))
-      .groupBy(sales.store_id, products.id);
+      .groupBy(sales.store_id, products.id, sales.id);
     res.status(200).json({ reportsData: reportsData || [] });
   } catch (error) {
     console.error(`error getting the reports data: ${error}`);
@@ -299,6 +301,7 @@ app.post("/addEmployee", async (req, res) => {
           jobTitle: data.job_title,
           store_id: data.store_id,
         })
+        //FIXME:ROMAN THIS IS BUGGED , IT'S LEADING TO A DUPLICATE KEY ISSUE - ANTHONY
         .returning({ id: employees.id });
 
       // Update fragment
@@ -322,7 +325,7 @@ app.post("/addEmployee", async (req, res) => {
       res.status(400).json({ errors: messages });
     }
   } catch (err) {
-    await client.end();
+    // await client.end();
     console.log("Internal server error", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
@@ -348,7 +351,7 @@ app.patch("/updateEmployee/:id", async (req, res) => {
     ]);
     res.status(201).json({ message: "Updated Employee Successfully" });
   } catch (err) {
-    await client.end();
+    // await client.end();
     console.log("Internal sever error", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -363,10 +366,11 @@ app.delete("/removeEmployee/:id", async (req, res) => {
 
     // Update fragment
     await client.connect();
+    //FIXME:Roman , Remember that the employee id is referenced in other tables (Sales), add an on delete CASCADE.
     await client.query("DELETE FROM Employees WHERE id=$1", [id]);
     res.status(201).json({ message: "Employee Record Deleted Succesfully" });
   } catch (err) {
-    await client.end();
+    // await client.end();
     console.log("Internal server error", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
@@ -377,6 +381,7 @@ app.post("/customerPurchase", async (req, res) => {
     const parsed = customerPurchase.safeParse(req.body);
     if (parsed.success) {
       const data = parsed.data;
+      // console.log("date=>", new Date(data.timestamp));
       // Update materialized view
       const saleID = await db
         .insert(sales)
@@ -385,8 +390,11 @@ app.post("/customerPurchase", async (req, res) => {
           product_id: data.product_id,
           employee_id: data.employee_id,
           store_id: data.store_id,
+          // the timestamp should just be a number -Anthony
           timestamp: new Date(data.timestamp),
         })
+        //FIXME:ROMAN THIS IS BUGGED , IT'S LEADING TO A DUPLICATE KEY ISSUE - ANTHONY
+
         .returning({ id: sales.id });
 
       // Update fragment
@@ -437,7 +445,7 @@ app.post("/customerPurchase", async (req, res) => {
       res.status(400).json({ errors });
     }
   } catch (err) {
-    await client.end();
+    // await client.end();
     console.log("Internal Server Error", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
