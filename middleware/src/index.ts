@@ -210,14 +210,12 @@ app.get("/trackInventory", async (req, res) => {
         productId: products.id,
         productName: products.name,
 
-        count: count(products.id),
         storeName: stores.name,
         storeAddress: stores.address,
       })
       .from(inventory)
       .innerJoin(products, eq(products.id, inventory.product_id))
-      .innerJoin(stores, eq(stores.id, inventory.id))
-      .groupBy(products.id, stores.name, stores.address);
+      .innerJoin(stores, eq(stores.id, inventory.id));
 
     res.status(200).json({ currentInvetory: currentInvetory || [] });
   } catch (error) {
@@ -363,7 +361,7 @@ app.delete("/removeEmployee/:id", async (req, res) => {
 
     // Update materialized view
     await db.delete(employees).where(eq(employees.id, id));
-
+    console.log("deletion checkpoint");
     // Update fragment
     await client.connect();
     //FIXME:Roman , Remember that the employee id is referenced in other tables (Sales), add an on delete CASCADE.
@@ -460,7 +458,6 @@ app.listen(PORT, async () => {
     await relationSetupConfig.Employees();
     await relationSetupConfig.Inventory();
     await relationSetupConfig.Sales();
-    
 
     await myDB.put(SETUP_KEY, "true");
   }

@@ -1,12 +1,5 @@
 import mariadb from "mariadb";
-import path from "path";
-import { config } from "dotenv";
-
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-config({ path: path.resolve(__dirname, "../../../.env") });
-
+import "dotenv/config";
 const pool = mariadb.createPool({
   host: process.env.MARIADB_HOST,
   user: process.env.MARIADB_USER,
