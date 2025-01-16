@@ -455,9 +455,12 @@ app.listen(PORT, async () => {
   let hasSetup = myDB.get(SETUP_KEY);
   if (hasSetup !== "true") {
     // Setup global relations
-    for (const value of Object.values(relationSetupConfig)) {
-      value();
-    }
+    await relationSetupConfig.Stores();
+    await relationSetupConfig.Products();
+    await relationSetupConfig.Employees();
+    await relationSetupConfig.Inventory();
+    await relationSetupConfig.Sales();
+    
 
     await myDB.put(SETUP_KEY, "true");
   }
