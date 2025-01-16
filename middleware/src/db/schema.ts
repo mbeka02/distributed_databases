@@ -29,16 +29,16 @@ export const employees = pgTable(EMPLOYEES, {
 
 export const sales = pgTable(SALES, {
     id: serial().primaryKey(),
-    product_id: integer("product_id").references(() => products.id).notNull(),
-    employee_id: integer("employee_id").references(() => employees.id).notNull(),
-    store_id: integer("store_id").references(() => stores.id).notNull(),
+    product_id: integer("product_id").references(() => products.id, {onDelete: "cascade"}).notNull(),
+    employee_id: integer("employee_id").references(() => employees.id, {onDelete: "cascade"}).notNull(),
+    store_id: integer("store_id").references(() => stores.id, {onDelete: "cascade"}).notNull(),
     price: real("price").notNull(),
     timestamp: timestamp("timestamp").notNull()
 });
 
 export const inventory = pgTable(INVENTORY, {
     id: serial("id").primaryKey(),
-    product_id: integer("product_id").references(() => products.id).notNull(),
-    store_id: integer("store_id").references(() => stores.id).notNull(),
+    product_id: integer("product_id").references(() => products.id, {onDelete: "cascade"}).notNull(),
+    store_id: integer("store_id").references(() => stores.id, {onDelete: "cascade"}).notNull(),
     item_count: integer("item_count").notNull()
 })
