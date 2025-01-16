@@ -49,9 +49,10 @@ export async function setupSales() {
     console.log("Setting up sales global relation");
     
     // Pull data from Kisumu
-    await pool.query("USE distributed_db");
+    const conn = await pool.getConnection();
+    await conn.query("USE distributed_db");
     const query = "SELECT * FROM Sales1";
-    const sales1 = await pool.query<sales[]>(query, []);
+    const sales1 = await conn.query<sales[]>(query, []);
     
     // Pull data from Nairobi
     await client.connect();
@@ -105,11 +106,11 @@ export async function setupInventory() {
     console.log("Done 2");
 
     // Fetch from mombasa
-    // await mysqlPool.query("USE distributed_db")
-    // const inventory2 = await mysqlPool.query("SELECT * FROM Inventory2");
-    // console.log(inventory2);
+    await mysqlPool.query("USE distributed_db")
+    const inventory2 = await mysqlPool.query("SELECT * FROM Inventory2");
 
-    const inventoryRows: Inventory[] = [...inventory1, ...inventory3.rows];
+    //@ts-ignore
+    const inventoryRows: Inventory[] = [...inventory1, ...inventory3.rows, ...inventory2[0]];
     await db.insert(inventory).values(inventoryRows);
 }
 
@@ -137,8 +138,3 @@ export async function setupEmployees() {
     // Insert in global relation
     await db.insert(employees).values(employeeR);
 }
-
-(async () => {
-    await setupInventory();
-    await setupSales();
-})();

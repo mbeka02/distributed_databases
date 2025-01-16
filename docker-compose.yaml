@@ -49,11 +49,11 @@ services:
 
   # MYSQL service on CentOS
   mysql_centos:
-    image: centos/mysql-80-centos7:8.0
+    image: mysql:8.0.40-debian
     container_name: mysql_site
     volumes:
       # - ./mysql_data:/var/lib/mysql
-      - ./mysql_init:/docker-entrypoint-initdb.d
+      - ./mysql_init/1.sql:/docker-entrypoint-initdb.d/1.sql
     environment:
       MYSQL_PASSWORD: password
       MYSQL_DATABASE: distributed_db
