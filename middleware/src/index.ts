@@ -447,7 +447,7 @@ app.listen(PORT, async () => {
   let hasSetup = myDB.get(SETUP_KEY);
   if (hasSetup !== "true") {
     // Setup global relations
-    for (const [key, value] of Object.entries(relationSetupConfig)) {
+    for (const value of Object.values(relationSetupConfig)) {
       value();
     }
 
