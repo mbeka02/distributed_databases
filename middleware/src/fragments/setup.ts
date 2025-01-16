@@ -2,6 +2,7 @@ import db from "../db";
 import pool from "../db/kisumu/db";
 import mysqlPool from "../db/mombasa/db";
 import client from "../db/nairobi/db";
+import middlewarePool from "../db/middleware/db";
 import { employees, inventory, products, sales, stores } from "../db/schema";
 
 interface sales {
@@ -64,6 +65,8 @@ export async function setupSales() {
 
     // Update global relation
     await db.insert(sales).values(Sales);
+
+    await middlewarePool.query(`setval("Sales_id_seq", SELECT max(id) FROM "Sales")`)
 }
 
 export async function setupProducts() {
@@ -75,6 +78,7 @@ export async function setupProducts() {
 
     // Insert into global relation
     await db.insert(products).values(productRows.rows);
+    await middlewarePool.query(`setval("Products_id_seq", SELECT max(id) FROM "Products")`);
 }
 
 export async function setupStores() { 
@@ -89,6 +93,8 @@ export async function setupStores() {
     const storeRows: Store[] = [...stores1rows.rows, ...stores2rows.rows, ...stores3rows.rows]
     // Insert in global relation
     await db.insert(stores).values(storeRows);
+
+    await middlewarePool.query(`setval("Stores_id_seq", SELECT max(id) FROM "Stores")`);
 }
 
 export async function setupInventory() {
@@ -112,6 +118,8 @@ export async function setupInventory() {
     //@ts-ignore
     const inventoryRows: Inventory[] = [...inventory1, ...inventory3.rows, ...inventory2[0]];
     await db.insert(inventory).values(inventoryRows);
+
+    await middlewarePool.query(`setval("Inventory_id_seq", SELECT max(id) FROM "Inventory")`);
 }
 
 export async function setupEmployees() {
@@ -137,4 +145,6 @@ export async function setupEmployees() {
 
     // Insert in global relation
     await db.insert(employees).values(employeeR);
+
+    await middlewarePool.query(`setval("Employees_id_seq", SELECT max(id) FROM "Employees")`);
 }
