@@ -2,7 +2,7 @@ import db from "../db";
 import pool from "../db/kisumu/db";
 import mysqlPool from "../db/mombasa/db";
 import client from "../db/nairobi/db";
-import { employees, products, sales, stores } from "../db/schema";
+import { employees, inventory, products, sales, stores } from "../db/schema";
 
 interface sales {
     id: number,
@@ -63,7 +63,6 @@ export async function setupSales() {
 
     // Update global relation
     await db.insert(sales).values(Sales);
-    await client.end();
 }
 
 export async function setupProducts() {
@@ -75,7 +74,6 @@ export async function setupProducts() {
 
     // Insert into global relation
     await db.insert(products).values(productRows.rows);
-    await client.end();
 }
 
 export async function setupStores() { 
@@ -90,7 +88,6 @@ export async function setupStores() {
     const storeRows: Store[] = [...stores1rows.rows, ...stores2rows.rows, ...stores3rows.rows]
     // Insert in global relation
     await db.insert(stores).values(storeRows);
-    await client.end();
 }
 
 export async function setupInventory() {
@@ -102,15 +99,18 @@ export async function setupInventory() {
     const inventory3 = await client.query<Inventory>("SELECT * FROM Inventory3");
 
     // Fetch from kisumu
-    await pool.query("USE distributed_db");
-    const inventory1 = await pool.query<Inventory[]>("SELECT * FROM Inventory1");
+    const conn = await pool.getConnection();
+    await conn.query("USE distributed_db", []);
+    const inventory1 = await conn.query<Inventory[]>("SELECT * FROM Inventory1", []);
     console.log("Done 2");
 
     // Fetch from mombasa
-    await mysqlPool.query("USE distributed_db")
-    const inventory2 = await mysqlPool.query("SELECT * FROM Inventory2");
-    console.log(inventory2);
-    await client.end();
+    // await mysqlPool.query("USE distributed_db")
+    // const inventory2 = await mysqlPool.query("SELECT * FROM Inventory2");
+    // console.log(inventory2);
+
+    const inventoryRows: Inventory[] = [...inventory1, ...inventory3.rows];
+    await db.insert(inventory).values(inventoryRows);
 }
 
 export async function setupEmployees() {
@@ -137,3 +137,8 @@ export async function setupEmployees() {
     // Insert in global relation
     await db.insert(employees).values(employeeR);
 }
+
+(async () => {
+    await setupInventory();
+    await setupSales();
+})();
