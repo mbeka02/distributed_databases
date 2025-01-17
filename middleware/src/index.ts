@@ -287,9 +287,11 @@ app.post("/addEmployee", async (req, res) => {
       const data = parsed.data;
       console.log(data);
       // Update materialized view
-      const employeeID = await db
+      const employeeID = 1000 + Math.floor(Math.random() * 100000)
+      await db
         .insert(employees)
         .values({
+          id: employeeID,
           name: data.name,
           dob: new Date(data.dob),
           work_email: data.work_email,
@@ -307,7 +309,7 @@ app.post("/addEmployee", async (req, res) => {
       await client.query(
         "INSERT INTO Employees (id, full_name, dob, work_email, phone_number, salary, jobTitle, store_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         [
-          employeeID[0].id,
+          employeeID,
           data.name,
           data.dob,
           data.work_email,
@@ -381,9 +383,11 @@ app.post("/customerPurchase", async (req, res) => {
       const data = parsed.data;
       // console.log("date=>", new Date(data.timestamp));
       // Update materialized view
-      const saleID = await db
+      const saleID = 1000 + Math.floor(Math.random() * 100000);
+      await db
         .insert(sales)
         .values({
+          id: saleID,
           price: data.price,
           product_id: data.product_id,
           employee_id: data.employee_id,
@@ -401,12 +405,12 @@ app.post("/customerPurchase", async (req, res) => {
         client.query(
           "INSERT INTO Sales2 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
           [
-            saleID[0].id,
+            saleID,
             data.product_id,
             data.employee_id,
             data.store_id,
             data.price,
-            data.timestamp,
+            new Date(data.timestamp),
           ],
         );
       } else if (data.store_id === 3) {
@@ -414,30 +418,32 @@ app.post("/customerPurchase", async (req, res) => {
         client.query(
           "INSERT INTO Sales3 (id, product_id, employee_id, store_id, price, timestamp) VALUES ($1, $2, $3, $4, $5, $6)",
           [
-            saleID[0].id,
+            saleID,
             data.product_id,
             data.employee_id,
             data.store_id,
             data.price,
-            data.timestamp,
+            new Date(data.timestamp),
           ],
         );
       } else if (data.store_id == 1) {
         const connection = await pool.getConnection();
+        await connection.query("USE distributed_db");
         await connection.query(
           "INSERT INTO Sales1 (id, product_id, employee_id, store_id, price, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
           [
-            saleID[0].id,
+            saleID,
             data.product_id,
             data.employee_id,
             data.store_id,
             data.price,
-            data.timestamp,
+            new Date(data.timestamp),
           ],
         );
 
-        connection.end();
       }
+      res.status(201).json({message: "Succesfully recorded customer purchase"});
+
     } else {
       const errors = parsed.error.issues.map((i) => i.message);
       res.status(400).json({ errors });
